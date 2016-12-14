@@ -19,3 +19,16 @@ CookieClickerFarm is a bot/hack for [Cookie Clicker](http://orteil.dashnet.org/c
 - Achievements Manager
 - Upgrades Manager
 - Products Manager
+
+
+## Usage
+
+Paste in console:
+
+```js
+(function(){
+    var scriptCookieClickerFarm = document.createElement('script');
+    scriptCookieClickerFarm.src = "https://rawgit.com/Giovani-Freitag/cookie-clicker-farm/master/cookieClickerFarm.js";
+    document.getElementsByTagName('head')[0].appendChild(scriptCookieClickerFarm);
+})();
+```

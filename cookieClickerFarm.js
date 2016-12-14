@@ -203,7 +203,7 @@ function CookieClickerFarm() {
      */
     this.buyProducts = function(amount, product) {
 
-        amount = !isNaN(amount) ? amount : 1;
+        amount = !isNaN(amount) ? parseInt(amount) : 1;
 
         if (product) {
 
@@ -231,7 +231,7 @@ function CookieClickerFarm() {
      */
     this.sellProducts = function(amount, product) {
 
-        amount = !isNaN(amount) ? amount : 1;
+        amount = !isNaN(amount) ? parseInt(amount) : 1;
 
         if (product) {
 
@@ -252,14 +252,14 @@ function CookieClickerFarm() {
 
     /**
      * Gets the products.
-     * Give player product ammount
+     * Give player product amount
      *
      * @param      {integer}  amount   The amount
      * @param      {string}   product  The product
      */
     this.getProducts = function(amount, product) {
 
-        amount = !isNaN(amount) ? amount : 1;
+        amount = !isNaN(amount) ? parseInt(amount) : 1;
 
         if (product) {
 
@@ -276,14 +276,14 @@ function CookieClickerFarm() {
 
     /**
      * Removes products.
-     * Remove player product ammount
+     * Remove player product amount
      *
      * @param      {integer}  amount   The amount
      * @param      {string}   product  The product
      */
     this.removeProducts = function(amount, product) {
 
-        amount = !isNaN(amount) ? amount : 1;
+        amount = !isNaN(amount) ? parseInt(amount) : 1;
 
         if (product) {
 
@@ -345,32 +345,6 @@ function CookieClickerFarm() {
 }
 
 var CCFarm = new CookieClickerFarm();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -799,23 +773,6 @@ function CookieClickerBot(Farmer) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * God Mode (Need be finnished)
  *
@@ -850,8 +807,6 @@ function CookieClickerGod() {
         product.buy(1);
     }
 
-
-
     this.start = function() {
 
         listen();
@@ -862,12 +817,6 @@ function CookieClickerGod() {
 
     };
 }
-
-
-
-
-
-
 
 
 
@@ -943,7 +892,7 @@ function CookieClickerFarmUI(Farmer) {
         $('head').append('<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">');
 
         //Self
-        $('head').append('<link rel="stylesheet" type="text/css" href="http://localhost:8080/cookieClickerFarm/style.css">');
+        $('head').append('<link rel="stylesheet" type="text/css" href="https://rawgit.com/Giovani-Freitag/cookie-clicker-farm/master/style.css">');
 
     };
 
@@ -1105,7 +1054,7 @@ function CookieClickerFarmUI(Farmer) {
 
 
         //Products
-        var $products = $('<label><span>Products</span><select></select><input type="number" placeholder="amount (500+ has crash risk)"><div class="button-wrapper"><button>Get</button><button>Remove</button></div></label>');
+        var $products = $('<label><span>Products</span><select></select><input type="number" placeholder="amount"><div class="button-wrapper"><button>Get</button><button>Remove</button><button>Buy</button><button>Sell</button></div></label>');
         var productStack = Object.keys(Game.Objects).sort().map(function(product) {
             return '<option value="' + escapeHtml(product) + '">' + escapeHtml(product) + '</option>';
         });
@@ -1113,7 +1062,8 @@ function CookieClickerFarmUI(Farmer) {
         $products.find('select').append(productStack);
         $products.find('button:nth-child(1)').on('click', this, getProducts);
         $products.find('button:nth-child(2)').on('click', this, removeProducts);
-
+        $products.find('button:nth-child(3)').on('click', this, buyProducts);
+        $products.find('button:nth-child(4)').on('click', this, sellProducts);
 
         $hackSection.append([$cookies, $goldenCookies, $ascensions, $prestige, $gamingHours, $buffer, $shimmer, $achievements, $upgrades, $products]);
 
@@ -1182,7 +1132,7 @@ function CookieClickerFarmUI(Farmer) {
     }
 
     /**
-     * Set player cookies ammount
+     * Set player cookies amount
      */
     function setCookies(e) {
 
@@ -1191,7 +1141,7 @@ function CookieClickerFarmUI(Farmer) {
     }
 
     /**
-     * Set player golden cookies ammount
+     * Set player golden cookies amount
      */
     function setGoldenCookies(e) {
 
@@ -1210,7 +1160,7 @@ function CookieClickerFarmUI(Farmer) {
     }
 
     /**
-     * Set game resets ammount
+     * Set game resets amount
      */
     function setAscensions(e) {
 
@@ -1220,7 +1170,7 @@ function CookieClickerFarmUI(Farmer) {
     }
 
     /**
-     * Set player prestige points ammount
+     * Set player prestige points amount
      */
     function setPrestige(e) {
 
@@ -1357,9 +1307,9 @@ function CookieClickerFarmUI(Farmer) {
     function getProducts(e) {
 
         var product = $(e.target).parent().siblings('select').val();
-        var ammount = $(e.target).parent().siblings('input').val();
+        var amount = $(e.target).parent().siblings('input').val();
 
-        Farmer.getProducts(ammount, product);
+        Farmer.getProducts(amount, product);
     }
 
     /**
@@ -1373,6 +1323,27 @@ function CookieClickerFarmUI(Farmer) {
         Farmer.removeProducts(amount, product);
     }
 
+    /**
+     * Give player products
+     */
+    function buyProducts(e) {
+
+        var product = $(e.target).parent().siblings('select').val();
+        var amount = $(e.target).parent().siblings('input').val();
+
+        Farmer.buyProducts(amount, product);
+    }
+
+    /**
+     * Remove player products
+     */
+    function sellProducts(e) {
+
+        var product = $(e.target).parent().siblings('select').val();
+        var amount = $(e.target).parent().siblings('input').val();
+
+        Farmer.sellProducts(amount, product);
+    }
     
     init();
 }
