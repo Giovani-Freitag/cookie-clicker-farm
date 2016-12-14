@@ -1,0 +1,126 @@
+.cookie-clicker-farm-wrapper {
+    position: absolute;
+    top: 90px;
+    right: 0;
+    overflow: hidden;
+    color: #333;
+    z-index: 500000
+}
+
+.cookie-clicker-farm-wrapper * {
+    box-sizing: border-box;
+}
+
+.cookie-clicker-farm-box.show {
+    margin-right: 0;
+}
+
+.cookie-clicker-farm-box {
+    margin-right: -320px;
+    position: relative;
+    z-index: 2000;
+    transition-duration: 0.8s;
+}
+
+.show {
+    display: block!important;
+}
+
+.cookie-clicker-farm-handle {
+    background: #1ab394;
+    position: absolute;
+    padding: 12px;
+    border-radius: 3px 0 0 3px;
+    font-size: 20px;
+    top: 0;
+    left: 0;
+    color: #fff;
+    cursor: pointer;
+}
+
+.cookie-clicker-farm-content {
+    width: 320px;
+    padding: 5px;
+    margin-left: 40px;
+    background: #f3f3f4;
+}
+
+.cookie-clicker-farm-content > h1{
+
+	text-align: center;
+	font-size: 2em;
+	background: #1ab394;
+	color: #fff;
+	height: 45px;
+	margin: -5px;
+	margin-bottom: 5px;
+	padding: 8px;
+}
+
+.cookie-clicker-farm-content section {
+    padding: 5px;
+}
+
+.cookie-clicker-farm-content section ~ section {
+    margin-top: 10px;
+    border-top: 1px solid #ccc;
+}
+
+.cookie-clicker-farm-content section h1 {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+    margin-bottom: 5px;
+}
+
+.cookie-clicker-farm-content section label {
+    display: block;
+}
+
+.cookie-clicker-farm-content section label ~ label {
+    margin-top: 5px;
+}
+
+.cookie-clicker-farm-content section label > span:not(.input-group) {
+    display: block;
+}
+
+.cookie-clicker-farm-content section label input[type="text"],
+.cookie-clicker-farm-content section label input[type="number"],
+.cookie-clicker-farm-content section label input[type="range"],
+.cookie-clicker-farm-content section label select {
+    padding: 1px 5px;
+    border-radius: 0;
+    width: 100%;
+}
+
+span.input-group {
+    position: relative;
+    display: table;
+    border-collapse: separate;
+    width: 100%;
+}
+
+span.input-group input {
+    display: table-cell;
+    position: relative;
+    z-index: 2;
+    float: left;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+span.input-group span {
+    display: table-cell;
+    width: 1%;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.botTopMenu {
+    cursor: pointer;
+    text-decoration: underline;
+	font-weight: bolder;
+    color: #fff;
+    background: #1ab394;
+}
