@@ -196,7 +196,7 @@ function CookieClickerFarm() {
 
     /**
      * Buy the product
-     * Gives player enough money and buy product amount
+     * Give player product amount withot pay for it
      *
      * @param      {integer}  amount   The amount
      * @param      {string}  product  The product
@@ -207,17 +207,17 @@ function CookieClickerFarm() {
 
         if (product) {
 
-            var price = Game.Objects[product].getSumPrice(amount);
-            Game.cookies += price;
-            Game.Objects[product].buy(amount);
+            Game.Objects[product].amount += amount;
+            Game.Objects[product].bought += amount;
+            Game.BuildingsOwned += amount;
 
         } else {
 
             Object.keys(Game.Objects).map(function(product) {
 
-                var price = Game.Objects[product].getSumPrice(amount);
-                Game.cookies += price;
-                Game.Objects[product].buy(amount);
+                Game.Objects[product].amount += amount;
+                Game.Objects[product].bought += amount;
+                Game.BuildingsOwned += amount;
             });
         }
     };
@@ -263,13 +263,21 @@ function CookieClickerFarm() {
 
         if (product) {
 
-            Game.Objects[product].getFree(amount);
+            Game.Objects[product].amount += amount;
+            Game.Objects[product].bought += amount;
+            Game.BuildingsOwned += amount;
+            Game.Objects[product].price += Game.Objects[product].getPrice();
+            Game.Objects[product].refresh();
 
         } else {
 
             Object.keys(Game.Objects).map(function(product) {
 
-                Game.Objects[product].getFree(amount);
+                Game.Objects[product].amount += amount;
+                Game.Objects[product].bought += amount;
+                Game.BuildingsOwned += amount;
+                Game.Objects[product].price += Game.Objects[product].getPrice();
+                Game.Objects[product].refresh();
             });
         }
     };
@@ -287,13 +295,19 @@ function CookieClickerFarm() {
 
         if (product) {
 
-            Game.Objects[product].sacrifice(amount);
+            Game.Objects[product].amount -= amount;
+            Game.Objects[product].bought -= amount;
+            Game.BuildingsOwned -= amount;
+            Game.Objects[product].refresh();
 
         } else {
 
             Object.keys(Game.Objects).map(function(product) {
 
-                Game.Objects[product].sacrifice(amount);
+                Game.Objects[product].amount -= amount;
+                Game.Objects[product].bought -= amount;
+                Game.BuildingsOwned -= amount;
+                Game.Objects[product].refresh();
             });
         }
     };
@@ -349,8 +363,6 @@ var CCFarm = new CookieClickerFarm();
 
 
 
-
-
 /**
  * Bot function
  *
@@ -371,7 +383,8 @@ function CookieClickerBot(Farmer) {
         enableShimmerCollector: true,
         enableBigCookieAutoClick: true,
         enableIntentToBuy: true,
-        enableWrinklerCollector: true
+        enableWrinklerCollector: true,
+        enableSantaEvolve: false
     };
 
     var loopStack = {};
@@ -468,14 +481,26 @@ function CookieClickerBot(Farmer) {
 
             function cheapest(a, b) {
 
-                if (a.basePrice < b.basePrice)
+                var aPrice = a.priceFunc ? a.priceFunc() : a.basePrice;
+                var bPrice = b.priceFunc ? b.priceFunc() : b.basePrice;
+
+                if (aPrice < bPrice)
                     return -1;
-                if (a.basePrice > b.basePrice)
+                if (aPrice > bPrice)
                     return 1;
                 return 0;
             }
 
             return Object.values(Game.Upgrades).filter(canWaitToBuy).filter(validPool).sort(cheapest)[0];
+        }
+
+        /**
+         * Buy santa evolve
+         */
+        function buySantaEvolve() {
+
+            Game.UpgradeSanta();
+            l('specialPopup').className = 'framed prompt offScreen';
         }
 
         /**
@@ -506,7 +531,7 @@ function CookieClickerBot(Farmer) {
                 upgrade.buy();
             }
 
-            console.log('The Upgrade ' + upgrade.name + ' was bought for ' + upgrade.basePrice);
+            console.log('The Upgrade ' + upgrade.name + ' was bought for ' + (upgrade.priceFunc ? upgrade.priceFunc() : upgrade.basePrice));
         };
 
         /**
@@ -518,8 +543,18 @@ function CookieClickerBot(Farmer) {
          */
         function chooseProductVsUpgrade(product, upgrade) {
 
+
+            if(loopStack.santaEvolve.enabled && Game.cookies >= Math.pow(Game.santaLevel+1,Game.santaLevel+1)){
+
+                console.log(loopStack.santaEvolve.enabled);
+
+                buySantaEvolve();
+                return;
+            }
+
+
             //First buy upgrade if it can
-            if (upgrade && (Game.cookies >= upgrade.basePrice)) {
+            if (upgrade && (Game.cookies >= (upgrade.priceFunc ? upgrade.priceFunc() : upgrade.basePrice))) {
 
                 buyUpgrade(upgrade);
                 return;
@@ -541,7 +576,7 @@ function CookieClickerBot(Farmer) {
                 if (upgrade) nameStack.push(upgrade.name);
                 if (product) nameStack.push(product.displayName);
 
-                var str = 'Waiting for buy ' + nameStack.join(' or ');
+                var str = 'Waiting to buy ' + nameStack.join(' or ');
 
                 console.log(str);
             }
@@ -555,7 +590,6 @@ function CookieClickerBot(Farmer) {
 
         var bestProductChoice = getBestProductChoice();
         var bestUpgradeChoice = getBestUpgradeChoice();
-
 
         chooseProductVsUpgrade(bestProductChoice, bestUpgradeChoice);
     };
@@ -671,6 +705,18 @@ function CookieClickerBot(Farmer) {
                     clearInterval(executionLoops['wrinklerCollectorLoop']);
                     delete executionLoops['wrinklerCollectorLoop'];
                 }
+            },
+            'santaEvolve': {
+
+                enabled: props.enableSantaEvolve,
+                enable: function() {
+
+                    loopStack.santaEvolve.enabled = true;
+                },
+                disable: function() {
+
+                    loopStack.santaEvolve.enabled = false;
+                }
             }
         }
     }
@@ -713,52 +759,6 @@ function CookieClickerBot(Farmer) {
     this.bots = function() {
 
         return loopStack;
-    }
-
-    //Sets a external enable/disable method
-    //for all bots
-    this.enableBigCookieAutoClick = function() {
-
-        loopStack['bigCookieAutoClick'].enabled = true;
-        loopStack['bigCookieAutoClick'].enable();
-    }
-    this.disableBigCookieAutoClick = function() {
-
-        loopStack['bigCookieAutoClick'].enabled = false;
-        loopStack['bigCookieAutoClick'].disable();
-    }
-
-    this.enableShimmerCollector = function() {
-
-        loopStack['shimmerCollector'].enabled = true;
-        loopStack['shimmerCollector'].enable();
-    }
-    this.disableShimmerCollector = function() {
-
-        loopStack['shimmerCollector'].enabled = false;
-        loopStack['shimmerCollector'].disable();
-    }
-
-    this.enableIntentToBuy = function() {
-
-        loopStack['intentToBuy'].enabled = true;
-        loopStack['intentToBuy'].enable();
-    }
-    this.disableIntentToBuy = function() {
-
-        loopStack['intentToBuy'].enabled = false;
-        loopStack['intentToBuy'].disable();
-    }
-
-    this.enableWrinklerCollector = function() {
-
-        loopStack['wrinklerCollector'].enabled = true;
-        loopStack['wrinklerCollector'].enable();
-    }
-    this.disableWrinklerCollector = function() {
-
-        loopStack['wrinklerCollector'].enabled = false;
-        loopStack['wrinklerCollector'].disable();
     }
 
     init();
@@ -846,6 +846,7 @@ function CookieClickerFarmUI(Farmer) {
 
     var elements = {};
     var buffer = null;
+    var bots = Farmer.bot.bots();
 
     /**
      * Initial function
@@ -950,10 +951,10 @@ function CookieClickerFarmUI(Farmer) {
 
 
     /**
-    * Creates bot inputs.
-    *
-    * @return     {Jquery Element}  The inputs
-    */
+     * Creates bot inputs.
+     *
+     * @return     {Jquery Element}  The inputs
+     */
     function createBotInputs() {
 
         //Create section
@@ -961,30 +962,35 @@ function CookieClickerFarmUI(Farmer) {
 
         var botInputStack = [];
 
-        var enabledBots = Farmer.bot.bots();
-
         var $bigCookieAutoClick = $('<label><input type="checkbox"> Big Cookie AutoClick</label>');
-        $bigCookieAutoClick.find('input').prop('checked', enabledBots.bigCookieAutoClick.enabled);
+        $bigCookieAutoClick.find('input').prop('checked', bots.bigCookieAutoClick.enabled);
         $bigCookieAutoClick.on('change', this, changeBigCookieAutoClick);
         botInputStack.push($bigCookieAutoClick);
 
 
         var $shimmerCollector = $('<label><input type="checkbox"> Capture Golden Cookies</label>');
-        $shimmerCollector.find('input').prop('checked', enabledBots.shimmerCollector.enabled);
+        $shimmerCollector.find('input').prop('checked', bots.shimmerCollector.enabled);
         $shimmerCollector.on('change', this, changeShimmerCollector);
         botInputStack.push($shimmerCollector);
 
 
         var $intentToBuy = $('<label><input type="checkbox"> Buy Products and Upgrades</label>');
-        $intentToBuy.find('input').prop('checked', enabledBots.intentToBuy.enabled);
+        $intentToBuy.find('input').prop('checked', bots.intentToBuy.enabled);
         $intentToBuy.on('change', this, changeIntentToBuy);
         botInputStack.push($intentToBuy);
 
 
         var $collectWrinklers = $('<label><input type="checkbox"> Collect wrinklers</label>');
-        $collectWrinklers.find('input').prop('checked', enabledBots.wrinklerCollector.enabled);
+        $collectWrinklers.find('input').prop('checked', bots.wrinklerCollector.enabled);
         $collectWrinklers.on('change', this, changeWrinklerCollector);
         botInputStack.push($collectWrinklers);
+
+
+        var $evolveSanta = $('<label><input type="checkbox"> Evolve santa</label>');
+        $evolveSanta.find('input').prop('checked', bots.santaEvolve.enabled);
+        $evolveSanta.on('change', this, changeSantaEvolve);
+        botInputStack.push($evolveSanta);
+
 
         //Appends all inputs to section
         $botSection.append(botInputStack);
@@ -1002,33 +1008,45 @@ function CookieClickerFarmUI(Farmer) {
 
         //Create section
         var $hackSection = $('<section class="hack"><h1>Hack</h1><div class="button-wrapper"></div></section>');
+        var hackInputStack = [];
 
         var $cookies = $('<label><span>Cookies</span><span class="input-group"><input type="number"><span><button>Set</button></span></span></label>');
         $cookies.find('button').on('click', this, setCookies);
+        hackInputStack.push($cookies);
 
         var $goldenCookies = $('<label><span>Golden Cookies</span><span class="input-group"><input type="number"><span><button>Set</button></span></span></label>');
         $goldenCookies.find('button').on('click', this, setGoldenCookies);
+        hackInputStack.push($goldenCookies);
 
         var $ascensions = $('<label><span>Ascensions</span><span class="input-group"><input type="number"><span><button>Set</button></span></span></label>');
         $ascensions.find('button').on('click', this, setAscensions);
+        hackInputStack.push($ascensions);
 
         var $prestige = $('<label><span>Prestige</span><span class="input-group"><input type="number"><span><button>Set</button></span></span></label>');
         $prestige.find('button').on('click', this, setPrestige);
+        hackInputStack.push($prestige);
 
         var $gamingHours = $('<label><span>Gaming Hours</span><span class="input-group"><input type="number"><span><button>Set</button></span></span></label>');
         $gamingHours.find('button').on('click', this, setGamingTime);
+        hackInputStack.push($gamingHours);
+
+        var $gameFps = $('<label><span>Game FPS</span><span class="input-group"><input type="number"><span><button>Set</button></span></span></label>');
+        $gameFps.find('button').on('click', this, setGameFps);
+        hackInputStack.push($gameFps);
 
         //Buffer
         var $buffer = $('<label><span>Buffer</span><input type="range" min="0" max="99999999999999999"><div class="button-wrapper"><button>Start</button><button>Stop</button></div></label>');
         $buffer.find('input').on('change', this, changeBuffer);
         $buffer.find('button:nth-child(1)').on('click', this, startBuffer);
         $buffer.find('button:nth-child(2)').on('click', this, stopBuffer);
+        hackInputStack.push($buffer);
 
         //Shimmer
         var $shimmer = $('<label><span>Shimmer Spawner</span><div class="button-wrapper"><button>Start</button><button>Stop</button><button>Once</button></div></label>');
         $shimmer.find('button:nth-child(1)').on('click', this, startShimmerSpawner);
         $shimmer.find('button:nth-child(2)').on('click', this, stopShimmerSpawner);
         $shimmer.find('button:nth-child(3)').on('click', this, spawnOneShimmer);
+        hackInputStack.push($shimmer);
 
         //Achievements
         var $achievements = $('<label><span>Achievements</span><select></select><div class="button-wrapper"><button>Unlock</button><button>Lock</button></div></label>');
@@ -1039,6 +1057,7 @@ function CookieClickerFarmUI(Farmer) {
         $achievements.find('select').append(achievementStack);
         $achievements.find('button:nth-child(1)').on('click', this, earnAchievements);
         $achievements.find('button:nth-child(2)').on('click', this, removeAchievements);
+        hackInputStack.push($achievements);
 
         //Upgrades
         var $upgrades = $('<label><span>Upgrades</span><select></select><div class="button-wrapper"><button>Unlock</button><button>Lock</button><button>Earn</button><button>Remove</button></div></label>');
@@ -1051,6 +1070,7 @@ function CookieClickerFarmUI(Farmer) {
         $upgrades.find('button:nth-child(2)').on('click', this, lockUpgrades);
         $upgrades.find('button:nth-child(3)').on('click', this, earnUpgrades);
         $upgrades.find('button:nth-child(4)').on('click', this, loseUpgrades);
+        hackInputStack.push($upgrades);
 
 
         //Products
@@ -1064,8 +1084,9 @@ function CookieClickerFarmUI(Farmer) {
         $products.find('button:nth-child(2)').on('click', this, removeProducts);
         $products.find('button:nth-child(3)').on('click', this, buyProducts);
         $products.find('button:nth-child(4)').on('click', this, sellProducts);
+        hackInputStack.push($products);
 
-        $hackSection.append([$cookies, $goldenCookies, $ascensions, $prestige, $gamingHours, $buffer, $shimmer, $achievements, $upgrades, $products]);
+        $hackSection.append(hackInputStack);
 
 
         return $hackSection;
@@ -1080,11 +1101,11 @@ function CookieClickerFarmUI(Farmer) {
 
         if ($(e.target).is(':checked')) {
 
-            Farmer.bot.enableBigCookieAutoClick();
+            bots.bigCookieAutoClick.enable();
 
         } else {
 
-            Farmer.bot.disableBigCookieAutoClick();
+            bots.bigCookieAutoClick.disable();
         }
     }
 
@@ -1095,10 +1116,10 @@ function CookieClickerFarmUI(Farmer) {
 
         if ($(e.target).is(':checked')) {
 
-            Farmer.bot.enableShimmerCollector();
+            bots.shimmerCollector.enable();
         } else {
 
-            Farmer.bot.disableShimmerCollector();
+            bots.shimmerCollector.disable();
         }
     }
 
@@ -1109,10 +1130,10 @@ function CookieClickerFarmUI(Farmer) {
 
         if ($(e.target).is(':checked')) {
 
-            Farmer.bot.enableIntentToBuy();
+            bots.intentToBuy.enable();
         } else {
 
-            Farmer.bot.disableIntentToBuy();
+            bots.intentToBuy.disable();
         }
     }
 
@@ -1123,11 +1144,26 @@ function CookieClickerFarmUI(Farmer) {
 
         if ($(e.target).is(':checked')) {
 
-            Farmer.bot.enableWrinklerCollector();
+            bots.wrinklerCollector.enable();
 
         } else {
 
-            Farmer.bot.disableWrinklerCollector();
+            bots.wrinklerCollector.disable();
+        }
+    }
+
+    /**
+     * Enable/Disable santa evolve
+     */
+    function changeSantaEvolve(e) {
+
+        if ($(e.target).is(':checked')) {
+
+            bots.santaEvolve.enable();
+
+        } else {
+
+            bots.santaEvolve.disable();
         }
     }
 
@@ -1138,6 +1174,7 @@ function CookieClickerFarmUI(Farmer) {
 
         var cookies = parseInt($(e.target).parent().siblings('input').val());
         Game.cookies = cookies;
+        Game.cookiesEarned = cookies;
     }
 
     /**
@@ -1178,6 +1215,22 @@ function CookieClickerFarmUI(Farmer) {
         Game.prestige = prestige;
         Game.UpdateMenu();
     }
+
+
+    /**
+     * Set game fps
+     */
+    function setGameFps(e) {
+
+        var fps = parseInt($(e.target).parent().siblings('input').val());
+        Game.fps = fps;
+    }
+
+
+
+
+
+    
 
 
     function changeBuffer(e) {
@@ -1344,7 +1397,7 @@ function CookieClickerFarmUI(Farmer) {
 
         Farmer.sellProducts(amount, product);
     }
-    
+
     init();
 }
 
